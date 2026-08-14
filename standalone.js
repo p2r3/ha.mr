@@ -7,8 +7,9 @@ import {
 
 const input = process.argv[2]?.trim();
 const alphabetName = process.argv[3]?.trim() || "ascii";
+const command = process.argv[4]?.trim() || "encode";
 if (!input) {
-  console.error(`Usage: hamr <link> [ascii|qr|emoji]`);
+  console.error(`Usage: hamr <link> [ascii|qr|emoji] [encode|decode]`);
   process.exit(1);
 }
 
@@ -19,11 +20,17 @@ if (input.toLowerCase().startsWith("http://ha.mr")) {
   payload = input.slice(13);
 } else if (input.toLowerCase().startsWith("ha.mr")) {
   payload = input.slice(5);
+} else if (command === "decode" || input.includes("#")) {
+  const pos = input.indexOf("#");
+  if (pos !== -1) {
+    payload = input.slice(pos);
+  }
 }
 
-if (payload) {
-  const isQRCode = input[0] === "/";
-  payload = payload.slice(1);
+if (payload || command === "decode") {
+  const isQRCode = payload ? payload[0] === "/" : input[0] === "/";
+  if (payload) payload = payload.slice(1);
+  else payload = input;
   const useEmoji = Array.from(payload).some(c => !outputAlphabetASCII.includes(c));
   if (isQRCode) console.log(decompress(payload, outputAlphabetQR));
   else console.log(decompress(payload, useEmoji ? outputAlphabetEmoji : outputAlphabetASCII));
