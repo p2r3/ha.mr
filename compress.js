@@ -245,9 +245,9 @@ export function compress (input, alphabet) {
       queryParamIndex ++;
     }
     // Look for smallest subalphabet that fits this path segment
-    let subalphabetIndex = subalphabets.length - 1;
-    let subalphabet = subalphabets[subalphabetIndex];
-    for (let i = 0; i < subalphabets.length - 1; i ++) {
+    let subalphabetIndex = -1;
+    let subalphabet = null;
+    for (let i = 0; i < subalphabets.length; i ++) {
       if (!Array.from(segment.value).some(c => !subalphabets[i].includes(c))) {
         subalphabet = subalphabets[i];
         subalphabetIndex = i;
@@ -283,6 +283,13 @@ export function compress (input, alphabet) {
     // Encode segment variant as 0
     // (We're adding +1 here to introduce 0 as a special value indicating Huffman)
     huffmanNumber *= BigInt(subalphabets.length + 1);
+    // If no subalphabet fits this segment, Huffman is the only option.
+    // Encoding a character missing from the subalphabet would produce the
+    // value 0, which the decoder treats as the end of the segment.
+    if (!subalphabet) {
+      number = huffmanNumber;
+      continue;
+    }
     // Compute number after encoding with chosen subalphabet
     const subalphabetLength = BigInt(subalphabet.length + 1);
     let subalphabetNumber = firstIteration ? number : number * subalphabetLength;
