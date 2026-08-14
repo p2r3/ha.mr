@@ -152,7 +152,11 @@ inputLinkElement.addEventListener("input", updateOutput);
   } else {
     // If no hash value, we're likely reading a QR code
     // For that, use the path instead
-    payload = decodeURIComponent(window.location.pathname.slice(1));
+    let qrPath = window.location.pathname;
+    if (qrPath.startsWith(domainPath)) {
+      qrPath = qrPath.slice(domainPath.length);
+    }
+    payload = decodeURIComponent(qrPath);
     alphabet = outputAlphabetQR;
   }
 
