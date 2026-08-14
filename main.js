@@ -38,6 +38,7 @@ const inputLinkElement = document.querySelector("#input-link");
 const outputLinkElement = document.querySelector("#output-link");
 const outputRatioElement = document.querySelector("#output-ratio");
 const queryWarningElement = document.querySelector("#query-warning");
+const copyButtonElement = document.querySelector("#copy-button")
 
 const qrCodeImage = document.querySelector("#qrcode");
 const qrCodeCorrectionLevelContainer = document.querySelector("#qr-correct-level-container");
@@ -105,6 +106,7 @@ function updateOutput () {
       qrCodeImage.style.display = "none";
       qrCodeCorrectionLevelContainer.style.display = "none";
     }
+    setCopyButtonState(input)
   } catch (e) {
     if (!input.trim()) {
       outputLinkElement.textContent = "Enter a link above to compress";
@@ -118,9 +120,34 @@ function updateOutput () {
     outputRatioElement.style.color = "rgba(255, 255, 255, 0)";
     outputLinkElement.removeAttribute("href");
     queryWarningElement.style.display = "none";
+    setCopyButtonState(input)
   }
 }
 inputLinkElement.addEventListener("input", updateOutput);
+
+function copyButtonClickHandler () {
+  const input = inputLinkElement.value.trim();
+
+  if (input) {
+    navigator.clipboard.writeText(outputLinkElement.textContent);
+  
+    setCopyButtonText("Copied!")
+    setTimeout(() => {setCopyButtonText("Copy Output")}, 2000)
+  }
+}
+copyButtonElement.addEventListener("click", copyButtonClickHandler)
+
+function setCopyButtonText(text) {
+  const buttonTexts = new Set(["Copy Output", "Copied!"]);
+
+  if (buttonTexts.has(text)) {
+    copyButtonElement.textContent = text;
+  }
+}
+
+function setCopyButtonState(input) {
+  copyButtonElement.disabled = !input ? true : false;
+}
 
 (() => {
   let payload = null;
