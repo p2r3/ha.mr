@@ -1,9 +1,15 @@
-import { compress, decompress } from "./compress.js";
+import { compress, decompress, isUnsafeScheme } from "./compress.js";
 import {
   outputAlphabetASCII,
   outputAlphabetQR,
   outputAlphabetEmoji
 } from "./alphabets.js";
+
+let domain = window.location.hostname;
+const webPort = window.location.port;
+if (webPort && webPort !== "80" && webPort !== "443") {
+  domain += `:${webPort}`;
+}
 
 var settings = {
   emoji: false,
@@ -54,11 +60,18 @@ function updateOutput () {
       inputNormalized = input.slice(8);
     } else if (input.startsWith("http://")) {
       inputNormalized = input.slice(7);
+    } else {
+      const schemePrefixMatch = input.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:(?:\/\/)?/);
+      if (schemePrefixMatch) {
+        inputNormalized = input.slice(schemePrefixMatch[0].length);
+      }
     }
     let excessiveParams = false;
-    if (URL.canParse("http://" + inputNormalized)) {
-      const url = new URL("http://" + inputNormalized);
-      if (url.searchParams.size > 1) {
+    const queryIdx = input.indexOf("?");
+    if (queryIdx !== -1) {
+      const queryPart = input.slice(queryIdx + 1).split("#")[0];
+      const paramsCount = queryPart.split("&").filter(Boolean).length;
+      if (paramsCount > 1) {
         excessiveParams = true;
       }
     }
@@ -67,7 +80,7 @@ function updateOutput () {
     } else {
       queryWarningElement.style.display = "none";
     }
-    const ratio = (1 - (countSymbols(output, alphabet) + 6) / inputNormalized.length) * 100;
+    const ratio = (1 - (countSymbols(output, alphabet) + 6) / (inputNormalized.length || 1)) * 100;
     if (ratio < -300) {
       outputRatioElement.textContent = `Output is much larger than the input`;
       outputRatioElement.style.color = "rgb(255, 50, 50)";
@@ -81,14 +94,15 @@ function updateOutput () {
       outputRatioElement.textContent = "Output is the same length as the input";
       outputRatioElement.style.color = "gray";
     }
-    outputLinkElement.textContent = `http://ha.mr#${output}`;
-    outputLinkElement.href = `http://ha.mr#${output}`;
+    outputLinkElement.textContent = `http://${domain}#${output}`;
+    outputLinkElement.href = `http://${domain}#${output}`;
     outputLinkElement.style.color = "";
     if (settings.qr) {
       const errorCorrection = ["L", "M", "Q", "H"][qrCodeCorrectionLevelElement.value];
       qrCodeImage.style.display = "inline";
       qrCodeCorrectionLevelContainer.style.display = "inline";
-      let qrCodeLink = `HTTP://HA.MR/${compress(input, outputAlphabetQR)}`;
+      const qrCodeDomain = domain.toUpperCase();
+      let qrCodeLink = `HTTP://${qrCodeDomain}/${compress(input, outputAlphabetQR)}`;
       QRCode.toDataURL(qrCodeLink, {
         errorCorrectionLevel: errorCorrection,
         scale: 8
@@ -108,6 +122,9 @@ function updateOutput () {
   } catch (e) {
     if (!input.trim()) {
       outputLinkElement.textContent = "Enter a link above to compress";
+    } else if (e.message && e.message.includes("unsafe")) {
+      outputLinkElement.textContent = "Unsupported or unsafe URI scheme";
+      outputLinkElement.style.color = "rgb(255, 50, 50)";
     } else {
       outputLinkElement.textContent = "Invalid link";
       outputLinkElement.style.color = "rgb(255, 50, 50)";
@@ -145,6 +162,10 @@ inputLinkElement.addEventListener("input", updateOutput);
   if (payload && payload.trim()) {
     try {
       const target = decompress(payload, alphabet);
+      const match = target.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):/);
+      if (match && isUnsafeScheme(match[1])) {
+        throw new Error("Unsafe URI scheme");
+      }
       window.location.href = target;
       return;
     } catch (e) {
