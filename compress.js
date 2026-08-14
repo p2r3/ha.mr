@@ -486,7 +486,7 @@ export function decompress (input, alphabet) {
         path += digit;
         if (digit === "%") {
           const byte = number % 256n;
-          path += byte.toString(16);
+          path += byte.toString(16).padStart(2, "0");
           number /= 256n;
         }
       }
