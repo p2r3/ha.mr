@@ -1,7 +1,7 @@
 /**
  * @file Implements link compression/decompression.
  */
-const VERSION = 0;
+const VERSION = 1;
 
 // Growing subcategories of the full URL alphabet
 // Each also includes the hyphen and underscore as common separators
@@ -197,9 +197,14 @@ export function compress (input, alphabet) {
   // character sets for individual segments and enables us to encode
   // only the transitions between segments. As-is, the system's a bit
   // clumsy, but it works.
-  const pathSegments = path.split("/")
-    .filter(c => c.length)
-    .map(c => ({ type: "path", value: c }));
+  const pathSegments = [];
+  const rawSegments = path.split("/");
+  for (let i = 0; i < rawSegments.length; i++) {
+    const seg = rawSegments[i];
+    if (seg.length > 0 || (i === rawSegments.length - 1 && i > 1)) {
+      pathSegments.push({ type: "path", value: seg });
+    }
+  }
 
   // Add search/query parameters to path segments
   let queryParams = Array.from(url.searchParams)
@@ -255,6 +260,7 @@ export function compress (input, alphabet) {
       }
     }
     // Compute number after Huffman coding
+    let huffmanValid = true;
     let huffmanNumber = firstIteration ? number : huffmanEncode(number, pathEncode["#"]);
     for (let i = segment.value.length - 1; i >= 0; i --) {
       if (segment.value[i - 2] === "%") {
@@ -263,13 +269,18 @@ export function compress (input, alphabet) {
         huffmanNumber += BigInt(byte);
         huffmanNumber = huffmanEncode(huffmanNumber, pathEncode["%"]);
         i -= 2;
-      } else {
+      } else if (segment.value[i] in pathEncode) {
         huffmanNumber = huffmanEncode(huffmanNumber, pathEncode[segment.value[i]]);
+      } else {
+        huffmanValid = false;
+        break;
       }
     }
     // Encode segment variant as 0
     // (We're adding +1 here to introduce 0 as a special value indicating Huffman)
-    huffmanNumber *= BigInt(subalphabets.length + 1);
+    if (huffmanValid) {
+      huffmanNumber *= BigInt(subalphabets.length + 1);
+    }
     // Compute number after encoding with chosen subalphabet
     const subalphabetLength = BigInt(subalphabet.length + 1);
     let subalphabetNumber = firstIteration ? number : number * subalphabetLength;
@@ -281,7 +292,7 @@ export function compress (input, alphabet) {
     subalphabetNumber *= BigInt(subalphabets.length + 1);
     subalphabetNumber += BigInt(subalphabetIndex + 1);
     // Compare candidate numbers, pick smallest one
-    if (huffmanNumber < subalphabetNumber) {
+    if (huffmanValid && huffmanNumber < subalphabetNumber) {
       number = huffmanNumber;
     } else {
       number = subalphabetNumber;
@@ -301,7 +312,7 @@ export function compress (input, alphabet) {
   // Encode either SLD + subdomain or full hostname
   if (!knownSLD) {
     // Write stopping token only if path follows
-    if (path || search) number = huffmanEncode(number, domainEncode["END"]);
+    if (pathSegments.length > 0) number = huffmanEncode(number, domainEncode["END"]);
     for (let i = hostname.length - 1; i >= 0; i --) {
       number = huffmanEncode(number, domainEncode[hostname[i]]);
     }
@@ -309,7 +320,7 @@ export function compress (input, alphabet) {
     // Encode subdomain
     if (subdomain) {
       // Write stopping token only if path follows
-      if (path || search) number = huffmanEncode(number, domainEncode["END"]);
+      if (pathSegments.length > 0) number = huffmanEncode(number, domainEncode["END"]);
       for (let i = subdomain.length - 1; i >= 0; i--) {
         number = huffmanEncode(number, domainEncode[subdomain[i]]);
       }
@@ -333,12 +344,26 @@ export function compress (input, alphabet) {
     number <<= 1n;
     number += 1n;
   }
-  // Encode protocol
-  number <<= 1n;
-  if (isHTTPS) number += 1n;
-  // Encode "www." prefix
-  number <<= 1n;
-  if (hasWWW) number += 1n;
+  // Encode protocol and "www." prefix
+  if (VERSION >= 1) {
+    if (isHTTPS && !hasWWW) {
+      number <<= 1n; // 0b0
+    } else if (isHTTPS && hasWWW) {
+      number <<= 2n;
+      number += 1n; // 0b01 (first popped is 1, second popped is 0)
+    } else if (!isHTTPS && !hasWWW) {
+      number <<= 3n;
+      number += 3n; // 0b011 (first popped is 1, second is 1, third is 0)
+    } else {
+      number <<= 3n;
+      number += 7n; // 0b111 (first popped is 1, second is 1, third is 1)
+    }
+  } else {
+    number <<= 1n;
+    if (isHTTPS) number += 1n;
+    number <<= 1n;
+    if (hasWWW) number += 1n;
+  }
   // Encode TLD
   number = huffmanEncode(number, tldEncode[tld] || tldEncode[""]);
   // Encode port number
@@ -350,11 +375,11 @@ export function compress (input, alphabet) {
   if (port) number += 1n;
 
   // Encode version number
+  number <<= 1n;
   for (let i = 0; i < VERSION; i ++) {
     number <<= 1n;
     number += 1n;
   }
-  number <<= 1n;
 
   return numberToString(number, alphabet);
 }
@@ -389,12 +414,34 @@ export function decompress (input, alphabet) {
   const tldDecodeResult = huffmanDecode(number, tldDecode);
   number = tldDecodeResult.newNumber;
   const tld = tldDecodeResult.digit;
-  // Decode "www." prefix
-  const hasWWW = number & 1n;
-  number >>= 1n;
-  // Decode protocol
-  const isHTTPS = number & 1n;
-  number >>= 1n;
+  // Decode protocol and "www." prefix
+  let isHTTPS = false;
+  let hasWWW = false;
+  if (version >= 1) {
+    const bit0 = number & 1n;
+    number >>= 1n;
+    if (bit0 === 0n) {
+      isHTTPS = true;
+      hasWWW = false;
+    } else {
+      const bit1 = number & 1n;
+      number >>= 1n;
+      if (bit1 === 0n) {
+        isHTTPS = true;
+        hasWWW = true;
+      } else {
+        const bit2 = number & 1n;
+        number >>= 1n;
+        isHTTPS = false;
+        hasWWW = bit2 === 1n;
+      }
+    }
+  } else {
+    hasWWW = Boolean(number & 1n);
+    number >>= 1n;
+    isHTTPS = Boolean(number & 1n);
+    number >>= 1n;
+  }
   // Decode "index.html"/"index.php" suffix
   let indexSuffix = "";
   if (number & 1n) {
@@ -473,7 +520,7 @@ export function decompress (input, alphabet) {
         path += digit;
         if (digit === "%") {
           const byte = number % 256n;
-          path += byte.toString(16);
+          path += byte.toString(16).toUpperCase().padStart(2, "0");
           number /= 256n;
         }
       }
@@ -506,6 +553,10 @@ export function decompress (input, alphabet) {
     number >>= 1n;
   }
 
+  const pathSplitIndex = path.search(/[?#]/);
+  const pathBeforeQuery = pathSplitIndex === -1 ? path : path.slice(0, pathSplitIndex);
+  const pathFromQuery = pathSplitIndex === -1 ? "" : path.slice(pathSplitIndex);
+
   let output = ""
     + (isHTTPS ? "https://" : "http://")
     + (hasWWW ? "www." : "")
@@ -513,8 +564,9 @@ export function decompress (input, alphabet) {
     + domain
     + (tld ? "." + tld : "")
     + (hasPort ? ":" + port : "")
-    + path
-    + indexSuffix;
+    + pathBeforeQuery
+    + indexSuffix
+    + pathFromQuery;
 
   return output;
 }
