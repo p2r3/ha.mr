@@ -5,6 +5,19 @@ import {
   outputAlphabetEmoji
 } from "./alphabets.js";
 
+const domain = window.location.hostname;
+const domainPath = window.location.pathname;
+const webPort = window.location.port;
+
+const domainWpath =
+  webPort && webPort !== "80" && webPort !== "443"
+    ? `${domain}:${webPort}${domainPath}`
+    : `${domain}${domainPath}`;
+
+if (domain !== "ha.mr" && domain !== "www.ha.mr") {
+  console.log(`This page is intended to be used on the ha.mr domain. You are currently on ${domain}.`);
+}
+
 var settings = {
   emoji: false,
   qr: false
@@ -81,14 +94,15 @@ function updateOutput () {
       outputRatioElement.textContent = "Output is the same length as the input";
       outputRatioElement.style.color = "gray";
     }
-    outputLinkElement.textContent = `http://ha.mr#${output}`;
-    outputLinkElement.href = `http://ha.mr#${output}`;
+    outputLinkElement.textContent = `http://${domainWpath}#${output}`;
+    outputLinkElement.href = `http://${domainWpath}#${output}`;
     outputLinkElement.style.color = "";
     if (settings.qr) {
       const errorCorrection = ["L", "M", "Q", "H"][qrCodeCorrectionLevelElement.value];
       qrCodeImage.style.display = "inline";
       qrCodeCorrectionLevelContainer.style.display = "inline";
-      let qrCodeLink = `HTTP://HA.MR/${compress(input, outputAlphabetQR)}`;
+      const qrCodeDomain = domainWpath.toUpperCase();
+      let qrCodeLink = `HTTP://${qrCodeDomain}/${compress(input, outputAlphabetQR)}`;
       QRCode.toDataURL(qrCodeLink, {
         errorCorrectionLevel: errorCorrection,
         scale: 8
