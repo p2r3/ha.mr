@@ -50,9 +50,10 @@ function updateOutput () {
     const alphabet = settings.emoji ? outputAlphabetEmoji : outputAlphabetASCII;
     const output = compress(input, alphabet);
     let inputNormalized = input;
-    if (input.startsWith("https://")) {
+    const inputLower = input.toLowerCase();
+    if (inputLower.startsWith("https://")) {
       inputNormalized = input.slice(8);
-    } else if (input.startsWith("http://")) {
+    } else if (inputLower.startsWith("http://")) {
       inputNormalized = input.slice(7);
     }
     let excessiveParams = false;
