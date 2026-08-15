@@ -101,7 +101,7 @@ function updateOutput () {
       const errorCorrection = ["L", "M", "Q", "H"][qrCodeCorrectionLevelElement.value];
       qrCodeImage.style.display = "inline";
       qrCodeCorrectionLevelContainer.style.display = "inline";
-      const qrCodeDomain = domainWpath.toUpperCase();
+      const qrCodeDomain = domainWpath.toUpperCase().replace(/\/$/, '');
       let qrCodeLink = `HTTP://${qrCodeDomain}/${compress(input, outputAlphabetQR)}`;
       QRCode.toDataURL(qrCodeLink, {
         errorCorrectionLevel: errorCorrection,
