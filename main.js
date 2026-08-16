@@ -51,7 +51,41 @@ const queryWarningElement = document.querySelector("#query-warning");
 const qrCodeImage = document.querySelector("#qrcode");
 const qrCodeCorrectionLevelContainer = document.querySelector("#qr-correct-level-container");
 const qrCodeCorrectionLevelElement = document.querySelector("#qr-correct-level");
-qrCodeCorrectionLevelElement.addEventListener("change", updateOutput);
+
+let qrCorrectionManuallySet = false;
+
+qrCodeCorrectionLevelElement.addEventListener("change", () => {
+  qrCorrectionManuallySet = true;
+  updateOutput();
+});
+
+function getOptimalErrorCorrectionLevel (text) {
+  const levels = ["M", "Q", "H"];
+
+  const baseVersion = QRCode.create(text, {
+    errorCorrectionLevel: levels[0]
+  }).version;
+
+  let optimalLevel = levels[0];
+
+  for (const level of levels.slice(1)) {
+    try {
+      const candidate = QRCode.create(text, {
+        errorCorrectionLevel: level
+      });
+
+      if (candidate.version > baseVersion) {
+        break;
+      }
+
+      optimalLevel = level;
+    } catch {
+      break;
+    }
+  }
+
+  return optimalLevel;
+}
 
 function updateOutput () {
   const input = inputLinkElement.value.trim();
@@ -59,9 +93,10 @@ function updateOutput () {
     const alphabet = settings.emoji ? outputAlphabetEmoji : outputAlphabetASCII;
     const output = compress(input, alphabet);
     let inputNormalized = input;
-    if (input.startsWith("https://")) {
+    const inputLower = input.toLowerCase();
+    if (inputLower.startsWith("https://")) {
       inputNormalized = input.slice(8);
-    } else if (input.startsWith("http://")) {
+    } else if (inputLower.startsWith("http://")) {
       inputNormalized = input.slice(7);
     }
     let excessiveParams = false;
@@ -94,11 +129,22 @@ function updateOutput () {
     outputLinkElement.href = `http://${domain}#${output}`;
     outputLinkElement.style.color = "";
     if (settings.qr) {
-      const errorCorrection = ["L", "M", "Q", "H"][qrCodeCorrectionLevelElement.value];
+      const correctionLevels = ["L", "M", "Q", "H"];
+
       qrCodeImage.style.display = "inline";
       qrCodeCorrectionLevelContainer.style.display = "inline";
+
       const qrCodeDomain = domain.toUpperCase();
-      let qrCodeLink = `HTTP://${qrCodeDomain}/${compress(input, outputAlphabetQR)}`;
+      const qrCodeLink = `HTTP://${qrCodeDomain}/${compress(input, outputAlphabetQR)}`;
+
+      if (!qrCorrectionManuallySet) {
+        const optimalLevel = getOptimalErrorCorrectionLevel(qrCodeLink);
+        qrCodeCorrectionLevelElement.value = correctionLevels.indexOf(optimalLevel);
+      }
+
+      const errorCorrection =
+        correctionLevels[qrCodeCorrectionLevelElement.value];
+
       QRCode.toDataURL(qrCodeLink, {
         errorCorrectionLevel: errorCorrection,
         scale: 8
@@ -130,7 +176,11 @@ function updateOutput () {
     queryWarningElement.style.display = "none";
   }
 }
-inputLinkElement.addEventListener("input", updateOutput);
+
+inputLinkElement.addEventListener("input", () => {
+  qrCorrectionManuallySet = false;
+  updateOutput();
+});
 
 (() => {
   let payload = null;

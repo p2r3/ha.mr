@@ -6,6 +6,11 @@
   <title>ha.mr - link compressor</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Hammersmith+One&display=swap');
+
+    :root {
+      color-scheme: light dark;
+    }
+
     html, body {
       margin: 0;
       width: 100%;
@@ -61,6 +66,9 @@
     span {
       text-align: center;
     }
+    a {
+      color: rgb(50, 100, 255);
+    }
     .title {
       font-size: 2.5em;
     }
@@ -70,22 +78,30 @@
       font-style: italic;
       opacity: 0.8;
     }
+    .source-link {
+      font-size: 0.75em;
+    }
     #input-link {
       padding: 5px 8px;
       border: 0;
       outline: 0;
-      border-bottom: 2px solid darkgray;
+      border-bottom: 2px solid light-dark(
+        rgba(0, 0, 0, 0.2),
+        rgba(255, 255, 255, 0.2)
+      );
       border-radius: 10px;
       margin: 10px 0;
       font-size: 16px;
-      background-color: rgb(230, 230, 230);
+      background-color: light-dark(
+        rgba(0, 0, 0, 0.1),
+        rgba(255, 255, 255, 0.1)
+      );
     }
     #output-link-container {
       margin: 10px 0 0 0;
       text-align: center;
     }
     #output-link {
-      color: rgb(50, 100, 255);
       word-break: break-all;
     }
     #output-ratio {
@@ -113,12 +129,22 @@
     #query-warning summary {
       cursor: pointer;
     }
+    header {
+      position: absolute;
+      top: 20px;
+    }
   </style>
   <script src="/qrcode.js"></script>
 </head>
 <body>
 
   <div id="loader"></div>
+
+  <header>
+    <a class="source-link" href="https://github.com/p2r3/ha.mr" target="_blank">Source code on GitHub</a>
+    |
+    <a class="source-link" href="https://youtu.be/TOr1Vvji6jA" target="_blank">Explanation video</a>
+  </header>
 
   <div id="content">
 
@@ -159,7 +185,6 @@
       <input type="checkbox" id="settings-qr" name="settings-qr" autocomplete="off">
       <label for="settings-qr"> Output QR code</label><br>
     </span>
-    <br><br>
 
   </div>
 
