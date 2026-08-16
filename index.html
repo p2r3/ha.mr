@@ -13,8 +13,6 @@
     }
     body {
       display: flex;
-      justify-content: center;
-      align-items: center;
       font-size: 120%;
     }
     * {
@@ -22,6 +20,8 @@
     }
     #loader {
       position: absolute;
+      top: calc(50% - 2em);
+      left: calc(50% - 2em);
       border: 0.5em solid lightgray;
       border-radius: 50%;
       border-top: 0.5em solid gray;
@@ -48,6 +48,8 @@
       opacity: 0;
       pointer-events: none;
       transition: opacity 1s;
+      margin: auto;
+      padding: 20px;
     }
     h1 {
       margin: 0;
@@ -60,6 +62,12 @@
     }
     span {
       text-align: center;
+    }
+    .icon {
+      font-family: monospace;
+      /* https://stackoverflow.com/a/63811419/4901968 */
+      color: transparent;
+      text-shadow: 0 0 #000;
     }
     .title {
       font-size: 2.5em;
@@ -122,6 +130,7 @@
 
   <div id="content">
 
+    <h1 class="title icon">🔨︎</h1>
     <h1 class="title">ha.mr</h1>
     <p class="subtitle">(read: "hammer")</p>
 
@@ -159,7 +168,6 @@
       <input type="checkbox" id="settings-qr" name="settings-qr" autocomplete="off">
       <label for="settings-qr"> Output QR code</label><br>
     </span>
-    <br><br>
 
   </div>
 
