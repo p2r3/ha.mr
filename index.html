@@ -104,6 +104,26 @@
     #output-link {
       word-break: break-all;
     }
+    #copy-output {
+      display: none;
+      margin-top: 8px;
+      padding: 5px 12px;
+      border: 0;
+      border-radius: 10px;
+      color: inherit;
+      background-color: light-dark(
+        rgba(0, 0, 0, 0.1),
+        rgba(255, 255, 255, 0.1)
+      );
+      cursor: pointer;
+      font-size: 16px;
+    }
+    #copy-output:hover {
+      background-color: light-dark(
+        rgba(0, 0, 0, 0.2),
+        rgba(255, 255, 255, 0.2)
+      );
+    }
     #output-ratio {
       transition: color 0.5s;
       color: gray;
@@ -166,6 +186,7 @@
     </details>
     <p id="output-link-container">
       <a id="output-link" target="_blank">Enter a link above to compress</a>
+      <br><button type="button" id="copy-output">Copy shortened URL</button>
       <br><span id="output-ratio">&nbsp;</span>
     </p>
 

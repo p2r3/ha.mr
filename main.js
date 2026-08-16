@@ -45,8 +45,37 @@ function countSymbols (string, alphabet) {
 
 const inputLinkElement = document.querySelector("#input-link");
 const outputLinkElement = document.querySelector("#output-link");
+const copyOutputElement = document.querySelector("#copy-output");
 const outputRatioElement = document.querySelector("#output-ratio");
 const queryWarningElement = document.querySelector("#query-warning");
+
+copyOutputElement.addEventListener("click", async () => {
+  try {
+    const shortenedURL = outputLinkElement.href;
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(shortenedURL);
+    } else {
+      const copyInput = document.createElement("textarea");
+      copyInput.value = shortenedURL;
+      copyInput.style.position = "fixed";
+      copyInput.style.opacity = "0";
+      document.body.append(copyInput);
+      copyInput.select();
+      if (!document.execCommand("copy")) throw new Error("Copy command failed");
+      copyInput.remove();
+    }
+    copyOutputElement.textContent = "Copied!";
+    setTimeout(() => {
+      copyOutputElement.textContent = "Copy shortened URL";
+    }, 1500);
+  } catch (e) {
+    copyOutputElement.textContent = "Copy failed";
+    console.error(e);
+    setTimeout(() => {
+      copyOutputElement.textContent = "Copy shortened URL";
+    }, 1500);
+  }
+});
 
 const qrCodeImage = document.querySelector("#qrcode");
 const qrCodeCorrectionLevelContainer = document.querySelector("#qr-correct-level-container");
@@ -128,6 +157,7 @@ function updateOutput () {
     outputLinkElement.textContent = `http://${domain}#${output}`;
     outputLinkElement.href = `http://${domain}#${output}`;
     outputLinkElement.style.color = "";
+    copyOutputElement.style.display = "inline-block";
     if (settings.qr) {
       const correctionLevels = ["L", "M", "Q", "H"];
 
@@ -173,6 +203,7 @@ function updateOutput () {
     qrCodeCorrectionLevelContainer.style.display = "none";
     outputRatioElement.style.color = "rgba(255, 255, 255, 0)";
     outputLinkElement.removeAttribute("href");
+    copyOutputElement.style.display = "none";
     queryWarningElement.style.display = "none";
   }
 }
