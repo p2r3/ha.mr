@@ -212,9 +212,18 @@ export function compress (input, alphabet) {
     pathSegments.push({ type: "hash", value: url.hash.slice(1) });
   }
 
-  // Normalize path segment encoding
+  // Normalize path segment encoding while preserving escaped reserved characters
+  const reservedEscape = /(%(?:23|24|26|2B|2C|2F|3A|3B|3D|3F|40))/gi;
+
   for (const segment of pathSegments) {
-    segment.value = encodeURI(decodeURI(segment.value));
+    segment.value = segment.value
+      .split(reservedEscape)
+      .map((part, index) =>
+        index % 2 === 1
+          ? part
+          : encodeURI(decodeURI(part))
+      )
+      .join("");
   }
 
   // Encode path following domain segment-by-segment, using best algorithm for each
