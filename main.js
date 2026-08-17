@@ -177,6 +177,17 @@ function updateOutput () {
   }
 }
 
+function displayRedirectInfo(target) {
+  const redirInfoEl = document.querySelector('#redir-info');
+  
+  if (redirInfoEl) {
+    const redirText = document.createElement('p');
+    redirText.textContent = `You are being redirected to ${target} in a few moments...`;
+    redirInfoEl.appendChild(redirText);
+    redirInfoEl.style.display = 'block';
+  }
+}
+
 inputLinkElement.addEventListener("input", () => {
   qrCorrectionManuallySet = false;
   updateOutput();
@@ -205,7 +216,10 @@ inputLinkElement.addEventListener("input", () => {
   if (payload && payload.trim()) {
     try {
       const target = decompress(payload, alphabet);
-      window.location.href = target;
+      displayRedirectInfo(target);
+      setTimeout(() => {
+        window.location.href = target;
+      }, 3000);
       return;
     } catch (e) {
       console.warn(`Redirect failed. Could not decode input.`);

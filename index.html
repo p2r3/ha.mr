@@ -25,8 +25,15 @@
     * {
       font-family: "Hammersmith One", sans-serif;
     }
-    #loader {
+    #redir-container {
       position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+    #loader {
       border: 0.5em solid lightgray;
       border-radius: 50%;
       border-top: 0.5em solid gray;
@@ -37,6 +44,9 @@
       opacity: 1;
       pointer-events: none;
       transition: opacity 1s;
+    }
+    #redir-info {
+      display: none;
     }
     @-webkit-keyframes spin {
       0% { -webkit-transform: rotate(0deg); }
@@ -138,7 +148,10 @@
 </head>
 <body>
 
-  <div id="loader"></div>
+  <div id="redir-container">
+    <div id="loader"></div>
+    <div id="redir-info"></div>
+  </div>
 
   <header>
     <a class="source-link" href="https://github.com/p2r3/ha.mr" target="_blank">Source code on GitHub</a>
