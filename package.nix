@@ -13,8 +13,9 @@ stdenvNoCC.mkDerivation {
 
   installPhase = ''
     runHook preInstall
-    mkdir -p $out/bin $out/lib
-    cp docs/alphabets.js docs/compress.js standalone.js $out/lib
+    mkdir -p $out/bin $out/lib/docs
+    cp docs/alphabets.js docs/compress.js $out/lib/docs
+    cp standalone.js $out/lib
     makeWrapper ${lib.getExe nodejs} $out/bin/hamr \
       --add-flags "$out/lib/standalone.js"
     runHook preInstall
