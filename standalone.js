@@ -1,9 +1,9 @@
-import { compress, decompress } from "./compress.js";
+import { compress, decompress } from "./docs/compress.js";
 import {
   outputAlphabetASCII,
   outputAlphabetQR,
   outputAlphabetEmoji
-} from "./alphabets.js";
+} from "./docs/alphabets.js";
 
 const input = process.argv[2]?.trim();
 const alphabetName = process.argv[3]?.trim() || "ascii";
@@ -28,7 +28,7 @@ if (input.toLowerCase().startsWith("http://ha.mr")) {
 }
 
 if (payload || command === "decode") {
-  const isQRCode = input[0] === "/";
+  const isQRCode = payload.startsWith("/");
   payload = payload.slice(1);
   const useEmoji = Array.from(payload).some(c => !outputAlphabetASCII.includes(c));
   if (isQRCode) console.log(decompress(payload, outputAlphabetQR));

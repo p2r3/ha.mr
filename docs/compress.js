@@ -152,6 +152,73 @@ function huffmanDecode (number, lookup) {
 }
 
 /**
+ * Converts a 128-bit integer to a compressed IPv6 address.
+ * @param {BigInt} number 128-bit IPv6 value
+ * @returns {string} IPv6 address without square brackets
+ */
+function numberToIPv6 (number) {
+  const hextets = [];
+
+  for (let i = 0; i < 8; i ++) {
+    hextets.unshift((number & 0xffffn).toString(16));
+    number >>= 16n;
+  }
+
+  let bestStart = -1;
+  let bestLength = 0;
+  let start = -1;
+
+  for (let i = 0; i <= hextets.length; i ++) {
+    if (i < hextets.length && hextets[i] === "0") {
+      if (start === -1) start = i;
+    } else if (start !== -1) {
+      const length = i - start;
+
+      if (length > bestLength && length > 1) {
+        bestStart = start;
+        bestLength = length;
+      }
+
+      start = -1;
+    }
+  }
+
+  if (bestStart === -1) return hextets.join(":");
+
+  const left = hextets.slice(0, bestStart).join(":");
+  const right = hextets.slice(bestStart + bestLength).join(":");
+
+  return `${left}::${right}`;
+}
+
+/**
+ * Converts an IPv6 address to its 128-bit integer representation.
+ * @param {string} input IPv6 address without square brackets
+ * @returns {BigInt} 128-bit IPv6 value
+ */
+function ipv6ToNumber (input) {
+  const halves = input.split("::");
+  const left = halves[0] ? halves[0].split(":") : [];
+  const right = halves[1] ? halves[1].split(":") : [];
+
+  const missing = 8 - left.length - right.length;
+  const hextets = [
+    ...left,
+    ...Array(missing).fill("0"),
+    ...right
+  ];
+
+  let number = 0n;
+
+  for (const hextet of hextets) {
+    number <<= 16n;
+    number += BigInt(`0x${hextet || "0"}`);
+  }
+
+  return number;
+}
+
+/**
  * Compresses the input link and encodes it to the given alphabet.
  * @param {string} input Link to compress
  * @param {string[]} alphabet Output alphabet as array of characters/strings
@@ -169,18 +236,20 @@ export function compress (input, alphabet) {
   }
 
   let hostname = url.hostname.toLowerCase();
+  const isIPv6 = hostname.startsWith("[") && hostname.endsWith("]");
   const port = BigInt(url.port);
-  const tld = hostname.includes(".") && hostname.split(".").at(-1).toLowerCase();
+  const tld = !isIPv6 && hostname.includes(".") &&
+    hostname.split(".").at(-1).toLowerCase();
 
   if (tld in tldEncode) {
     hostname = hostname.split(".").slice(0, -1).join(".");
   }
 
   const isHTTPS = url.protocol === "https:";
-  const hasWWW = url.hostname.toLowerCase().startsWith("www.");
+  const hasWWW = !isIPv6 && url.hostname.toLowerCase().startsWith("www.");
   if (hasWWW) hostname = hostname.slice(4);
 
-  const knownSLD = sldList.find(c => hostname.endsWith(c)) || "";
+  const knownSLD = !isIPv6 ? sldList.find(c => hostname.endsWith(c)) || "" : "";
   const subdomain = hostname.slice(0, -knownSLD.length);
 
   // Read URL path, split it into segments
@@ -212,9 +281,18 @@ export function compress (input, alphabet) {
     pathSegments.push({ type: "hash", value: url.hash.slice(1) });
   }
 
-  // Normalize path segment encoding
+  // Normalize path segment encoding while preserving escaped reserved characters
+  const reservedEscape = /(%(?:23|24|26|2B|2C|2F|3A|3B|3D|3F|40))/gi;
+
   for (const segment of pathSegments) {
-    segment.value = encodeURI(decodeURI(segment.value));
+    segment.value = segment.value
+      .split(reservedEscape)
+      .map((part, index) =>
+        index % 2 === 1
+          ? part
+          : encodeURI(decodeURI(part))
+      )
+      .join("");
   }
 
   // Encode path following domain segment-by-segment, using best algorithm for each
@@ -318,8 +396,16 @@ export function compress (input, alphabet) {
     }
   }
 
-  // Encode either SLD + subdomain or full hostname
-  if (!knownSLD) {
+  // Encode IPv6 literal, SLD + subdomain, or full hostname
+  if (isIPv6) {
+    const ipv6Number = ipv6ToNumber(hostname.slice(1, -1));
+
+    number <<= 128n;
+    number += ipv6Number;
+
+    // An END as the first hostname symbol marks an IPv6 literal.
+    number = huffmanEncode(number, domainEncode["END"]);
+  } else if (!knownSLD) {
     // Write stopping token only if path follows
     if (pathSegments.length > 0) number = huffmanEncode(number, domainEncode["END"]);
     for (let i = hostname.length - 1; i >= 0; i --) {
@@ -452,11 +538,23 @@ export function decompress (input, alphabet) {
       }
     }
   } else {
-    while (number > 1n) {
-      const { newNumber, digit } = huffmanDecode(number, domainDecode);
-      number = newNumber;
-      if (digit === "END") break;
+    const { newNumber, digit } = huffmanDecode(number, domainDecode);
+    number = newNumber;
+
+    if (digit === "END") {
+      const ipv6Number = number & ((1n << 128n) - 1n);
+      number >>= 128n;
+
+      domain = `[${numberToIPv6(ipv6Number)}]`;
+    } else {
       domain += digit;
+
+      while (number > 1n) {
+        const { newNumber, digit } = huffmanDecode(number, domainDecode);
+        number = newNumber;
+        if (digit === "END") break;
+        domain += digit;
+      }
     }
   }
 
