@@ -177,14 +177,22 @@ function updateOutput () {
   }
 }
 
-function displayRedirectInfo(target) {
+function handleRedirectPrompt(target) {
   const redirInfoEl = document.querySelector('#redir-info');
   
   if (redirInfoEl) {
+    redirInfoEl.classList.add('show');
+
     const redirText = document.createElement('p');
-    redirText.textContent = `You are being redirected to ${target} in a few moments...`;
+    redirText.textContent = `Proceed to ${target}?`;
     redirInfoEl.appendChild(redirText);
-    redirInfoEl.style.display = 'block';
+
+    const redirButton = document.createElement('button');
+    redirButton.textContent = 'Yes, redirect me';
+    redirButton.addEventListener('click', () => {
+      window.location.href = target;
+    });
+    redirInfoEl.appendChild(redirButton);
   }
 }
 
@@ -216,10 +224,7 @@ inputLinkElement.addEventListener("input", () => {
   if (payload && payload.trim()) {
     try {
       const target = decompress(payload, alphabet);
-      displayRedirectInfo(target);
-      setTimeout(() => {
-        window.location.href = target;
-      }, 3000);
+      handleRedirectPrompt(target);
       return;
     } catch (e) {
       console.warn(`Redirect failed. Could not decode input.`);
