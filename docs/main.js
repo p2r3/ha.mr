@@ -177,23 +177,15 @@ function updateOutput () {
   }
 }
 
-function handleRedirectPrompt(target) {
-  const redirInfoEl = document.querySelector('#redir-info');
-  
-  if (redirInfoEl) {
-    redirInfoEl.classList.add('show');
+const redirectContainerElement = document.querySelector("#redirect-container");
+const redirectLinkElement = document.querySelector("#redirect-link");
+const loaderElement = document.querySelector("#loader");
 
-    const redirText = document.createElement('p');
-    redirText.textContent = `Proceed to ${target}?`;
-    redirInfoEl.appendChild(redirText);
-
-    const redirButton = document.createElement('button');
-    redirButton.textContent = 'Yes, redirect me';
-    redirButton.addEventListener('click', () => {
-      window.location.href = target;
-    });
-    redirInfoEl.appendChild(redirButton);
-  }
+function handleRedirectPrompt (target) {
+  loaderElement.style.display = "none";
+  redirectContainerElement.style.display = "flex";
+  redirectLinkElement.textContent = target;
+  redirectLinkElement.href = target;
 }
 
 inputLinkElement.addEventListener("input", () => {
@@ -234,8 +226,10 @@ inputLinkElement.addEventListener("input", () => {
 
   updateOutput();
 
-  document.querySelector("#loader").style.opacity = 0;
+  loaderElement.style.opacity = 0;
   document.querySelector("#content").style.opacity = 1;
   document.querySelector("#content").style.pointerEvents = "auto";
+  document.querySelector("header").style.opacity = 1;
+  document.querySelector("header").style.pointerEvents = "auto";
 
 })();
