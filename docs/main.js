@@ -132,13 +132,17 @@ function updateOutput() {
           maxCorrectionLevel: qrCorrection.H,
         });
 
-      const qrImage = qr.toCanvas(qrCodeImage,
+      qr.toCanvas(qrCodeImage,
         {
           on: [0x00, 0x00, 0x00, 0xFF], // black
           off: [0xFF, 0xFF, 0xFF, 0xFF], // white
           pad: 4,
         }
       );
+      // set image width to qr version size + 4px per side padding, scale by 8
+      // otherwise the output will be at 1px scale and impossible to see.
+      qrCodeImage.style.width = `${(qr.size + 8) * 8}px`;
+      qrCodeImage.style.height = `${(qr.size + 8) * 8}px`;
       qrCodeImage.title = qrCodeLink;
 
     } else {

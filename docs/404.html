@@ -155,8 +155,6 @@
 
     #qrcode {
       display: none;
-      /* lean-qr sets the canvas to a fixed width, we need to scale it ourselves manually */
-      width: calc( attr(width px) * 8);
       /* stop the browser from interpolating the QR code and blurring the edges */
       image-rendering: pixelated;
     }
