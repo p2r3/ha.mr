@@ -5,6 +5,8 @@ import {
   outputAlphabetEmoji
 } from "./alphabets.js";
 
+let generateQR, qrMode, qrCorrection;
+
 let domain = window.location.hostname;
 if (domain !== "ha.mr" && domain !== "www.ha.mr") {
   console.log(`This page is intended to be used on the ha.mr domain. You are currently on ${domain}.`);
@@ -33,12 +35,12 @@ for (const setting in settingsElements) {
   });
 }
 
-function countSymbols (string, alphabet) {
+function countSymbols(string, alphabet) {
   let count = 0;
   while (string) {
     const symbol = alphabet.find(c => string.endsWith(c));
     string = string.slice(0, symbol ? -symbol.length : -1);
-    count ++;
+    count++;
   }
   return count;
 }
@@ -52,42 +54,11 @@ const qrCodeImage = document.querySelector("#qrcode");
 const qrCodeCorrectionLevelContainer = document.querySelector("#qr-correct-level-container");
 const qrCodeCorrectionLevelElement = document.querySelector("#qr-correct-level");
 
-let qrCorrectionManuallySet = false;
-
 qrCodeCorrectionLevelElement.addEventListener("change", () => {
-  qrCorrectionManuallySet = true;
   updateOutput();
 });
 
-function getOptimalErrorCorrectionLevel (text) {
-  const levels = ["M", "Q", "H"];
-
-  const baseVersion = QRCode.create(text, {
-    errorCorrectionLevel: levels[0]
-  }).version;
-
-  let optimalLevel = levels[0];
-
-  for (const level of levels.slice(1)) {
-    try {
-      const candidate = QRCode.create(text, {
-        errorCorrectionLevel: level
-      });
-
-      if (candidate.version > baseVersion) {
-        break;
-      }
-
-      optimalLevel = level;
-    } catch {
-      break;
-    }
-  }
-
-  return optimalLevel;
-}
-
-function updateOutput () {
+function updateOutput() {
   const input = inputLinkElement.value.trim();
   try {
     const alphabet = settings.emoji ? outputAlphabetEmoji : outputAlphabetASCII;
@@ -129,7 +100,18 @@ function updateOutput () {
     outputLinkElement.href = `http://${domain}#${output}`;
     outputLinkElement.style.color = "";
     if (settings.qr) {
-      const correctionLevels = ["L", "M", "Q", "H"];
+      // lazyload the qr generator to avoid loading it on a redirect
+      if (!generateQR) {
+        import("lean-qr").then((module) => {
+          generateQR = module.generate;
+          qrMode = module.mode;
+          qrCorrection = module.correction;
+          updateOutput();
+        });
+        return;
+      }
+
+      const correctionLevels = [qrCorrection.L, qrCorrection.M, qrCorrection.Q, qrCorrection.H];
 
       qrCodeImage.style.display = "inline";
       qrCodeCorrectionLevelContainer.style.display = "inline";
@@ -137,26 +119,28 @@ function updateOutput () {
       const qrCodeDomain = domain.toUpperCase();
       const qrCodeLink = `HTTP://${qrCodeDomain}/${compress(input, outputAlphabetQR)}`;
 
-      if (!qrCorrectionManuallySet) {
-        const optimalLevel = getOptimalErrorCorrectionLevel(qrCodeLink);
-        qrCodeCorrectionLevelElement.value = correctionLevels.indexOf(optimalLevel);
-      }
-
       const errorCorrection =
         correctionLevels[qrCodeCorrectionLevelElement.value];
 
-      QRCode.toDataURL(qrCodeLink, {
-        errorCorrectionLevel: errorCorrection,
-        scale: 8
-      }, (err, url) => {
-        if (err) {
-          qrCodeImage.style.display = "none";
-          qrCodeCorrectionLevelContainer.style.display = "none";
-          return;
+      const qr = generateQR(
+        qrMode.alphaNumeric(qrCodeLink),
+        {
+          minVersion: 1,
+          maxVersion: 40,
+          minCorrectionLevel: errorCorrection,
+          // lean-qr will choose the highest ecc that will fit in the smallest version, between minCorrectionLevel and maxCorrectionLevel
+          maxCorrectionLevel: qrCorrection.H,
+        });
+
+      const qrImage = qr.toCanvas(qrCodeImage,
+        {
+          on: [0x00, 0x00, 0x00, 0xFF], // black
+          off: [0xFF, 0xFF, 0xFF, 0xFF], // white
+          pad: 4,
         }
-        qrCodeImage.src = url;
-        qrCodeImage.title = qrCodeLink;
-      });
+      );
+      qrCodeImage.title = qrCodeLink;
+
     } else {
       qrCodeImage.style.display = "none";
       qrCodeCorrectionLevelContainer.style.display = "none";
@@ -181,7 +165,7 @@ const redirectContainerElement = document.querySelector("#redirect-container");
 const redirectLinkElement = document.querySelector("#redirect-link");
 const loaderElement = document.querySelector("#loader");
 
-function handleRedirectPrompt (target) {
+function handleRedirectPrompt(target) {
   loaderElement.style.display = "none";
   redirectContainerElement.style.display = "flex";
   redirectLinkElement.textContent = target;
@@ -189,7 +173,6 @@ function handleRedirectPrompt (target) {
 }
 
 inputLinkElement.addEventListener("input", () => {
-  qrCorrectionManuallySet = false;
   updateOutput();
 });
 

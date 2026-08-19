@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,20 +12,24 @@
       color-scheme: light dark;
     }
 
-    html, body {
+    html,
+    body {
       margin: 0;
       width: 100%;
       height: 100%;
     }
+
     body {
       display: flex;
       justify-content: center;
       align-items: center;
       font-size: 120%;
     }
+
     * {
       font-family: "Hammersmith One", sans-serif;
     }
+
     #redirect-container {
       position: absolute;
       display: none;
@@ -32,6 +37,7 @@
       align-items: center;
       justify-content: center;
     }
+
     #loader {
       border: 0.5em solid lightgray;
       border-radius: 50%;
@@ -44,14 +50,27 @@
       pointer-events: none;
       transition: opacity 1s;
     }
+
     @-webkit-keyframes spin {
-      0% { -webkit-transform: rotate(0deg); }
-      100% { -webkit-transform: rotate(360deg); }
+      0% {
+        -webkit-transform: rotate(0deg);
+      }
+
+      100% {
+        -webkit-transform: rotate(360deg);
+      }
     }
+
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
+
     #content {
       display: flex;
       flex-direction: column;
@@ -60,78 +79,92 @@
       pointer-events: none;
       transition: opacity 1s;
     }
+
     h1 {
       margin: 0;
     }
+
     p {
       margin-top: 0;
     }
+
     label {
       font-size: 0.9em;
     }
+
     span {
       text-align: center;
     }
+
     a {
       color: rgb(50, 100, 255);
     }
+
     button {
       padding: 5px 10px;
       font-size: 1rem;
       border: 0;
       border-radius: 10px;
-      background-color: light-dark(
-        rgba(0, 0, 0, 0.1),
-        rgba(255, 255, 255, 0.1)
-      );
+      background-color: light-dark(rgba(0, 0, 0, 0.1),
+          rgba(255, 255, 255, 0.1));
       cursor: pointer;
     }
+
     .title {
       font-size: 2.5em;
     }
+
     .subtitle {
       font-size: 0.6em;
       margin-top: -10px;
       font-style: italic;
       opacity: 0.8;
     }
+
     .source-link {
       font-size: 0.75em;
     }
+
     #input-link {
       padding: 5px 8px;
       border: 0;
       outline: 0;
-      border-bottom: 2px solid light-dark(
-        rgba(0, 0, 0, 0.2),
-        rgba(255, 255, 255, 0.2)
-      );
+      border-bottom: 2px solid light-dark(rgba(0, 0, 0, 0.2),
+          rgba(255, 255, 255, 0.2));
       border-radius: 10px;
       margin: 10px 0;
       font-size: 16px;
-      background-color: light-dark(
-        rgba(0, 0, 0, 0.1),
-        rgba(255, 255, 255, 0.1)
-      );
+      background-color: light-dark(rgba(0, 0, 0, 0.1),
+          rgba(255, 255, 255, 0.1));
     }
+
     #output-link-container {
       margin: 10px 0 0 0;
       text-align: center;
     }
+
     #output-link {
       word-break: break-all;
     }
+
     #output-ratio {
       transition: color 0.5s;
       color: gray;
       user-select: none;
     }
+
     #qrcode {
       display: none;
+      /* lean-qr sets the canvas to a fixed width, we need to scale it ourselves manually */
+      width: calc( attr(width px) * 8);
+      /* stop the browser from interpolating the QR code and blurring the edges */
+      image-rendering: pixelated;
     }
+
     #qr-correct-level-container {
       display: none;
     }
+
     #query-warning {
       display: none;
       font-size: 1rem;
@@ -144,10 +177,12 @@
       border-radius: 10px;
       margin: 5px 0 15px 0;
     }
+
     #query-warning summary {
       cursor: pointer;
       color: #111111;
     }
+
     header {
       position: absolute;
       top: 20px;
@@ -156,8 +191,8 @@
       transition: opacity 1s;
     }
   </style>
-  <script src="/qrcode.js"></script>
 </head>
+
 <body>
 
   <div id="redirect-container">
@@ -195,10 +230,10 @@
       <br><span id="output-ratio">&nbsp;</span>
     </p>
 
-    <image width="256" height="256" id="qrcode"></image>
+    <canvas id="qrcode"></canvas>
 
     <span id="qr-correct-level-container">
-      <label>QR code error correction threshold</label>
+      <label>Minimum QR code error correction threshold</label>
       <br>
       <input type="range" name="qr-correct-level" id="qr-correct-level" autocomplete="off" min="0" max="3" value="1">
     </span>
@@ -214,6 +249,17 @@
 
   </div>
 
-  <script type="module" src="/main.js"></script>
+  <script type="importmap">
+      {
+        "imports": {
+          "lean-qr": "./lean-qr/lean-qr.mjs"
+        },
+        "integrity": {
+          "./lean-qr/lean-qr.mjs": "sha384-8eUyP7pAI/CAsPbFasvjhNEauysTGKSZB7Ff58EspMwRKpePW04ET9gauINGW/m5"
+        }
+      }
+    </script>
+  <script type="module" src="./main.js"></script>
 </body>
+
 </html>
