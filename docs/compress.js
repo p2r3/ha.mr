@@ -271,11 +271,20 @@ export function compress (input, alphabet) {
     .map(c => ({ type: "path", value: c }));
 
   // Add search/query parameters to path segments
-  const queryParams = url.search.slice(1)
-    .split("=")
-    .map(c => c.split("&"))
-    .flat()
-    .map(c => ({ type: "query", value: c }));
+  const queryParams = url.search
+    ? url.search.slice(1)
+      .split("&")
+      .flatMap(parameter => {
+        const separatorIndex = parameter.indexOf("=");
+        return separatorIndex === -1
+          ? [parameter, ""]
+          : [
+              parameter.slice(0, separatorIndex),
+              parameter.slice(separatorIndex + 1)
+            ];
+      })
+      .map(value => ({ type: "query", value }))
+    : [];
   pathSegments.push(...queryParams);
 
   // Add hash value to path segments
