@@ -102,7 +102,7 @@ function updateOutput() {
     if (settings.qr) {
       // lazyload the qr generator to avoid loading it on a redirect
       if (!generateQR) {
-        import("lean-qr").then((module) => {
+        import("./lean-qr/lean-qr.js").then((module) => {
           generateQR = module.generate;
           qrMode = module.mode;
           qrCorrection = module.correction;
