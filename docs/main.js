@@ -135,7 +135,7 @@ function updateOutput() {
         {
           on:  [0x00, 0x00, 0x00, 0xFF], // black
           off: [0xFF, 0xFF, 0xFF, 0xFF], // white
-          pad: 4,
+          pad: 2,
         }
       );
       // Set image width to qr version size + 4px per side padding, scale by 8
