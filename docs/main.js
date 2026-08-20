@@ -67,7 +67,11 @@ function updateOutput () {
     // compress.js does not have support for non-http(s) protocols, nor credentials.
     // previously it would silently strip them, but this block makes it reject instead
     // additionally, invalid inputs the compressor would otherwise accept (like "http://") are rejected as well
-    const url = new URL(input);
+
+    // Regex: one or more word [a-zA-Z0-9_] characters, followed by ://. 
+    // Underscore is not valid but will get rejected by new URL() anyway
+    const hasProtocol = input.match(/\w+:\/\//); 
+    const url = new URL(hasProtocol ? input : "http://" + input);
 
     if (url.protocol !== "http:" && url.protocol !== "https:") {
       throw new Error(`Invalid protocol: ${url.protocol}. Only http and https are supported.`);
