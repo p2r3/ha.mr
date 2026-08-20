@@ -63,6 +63,20 @@ function updateOutput () {
   try {
     const alphabet = settings.emoji ? outputAlphabetEmoji : outputAlphabetASCII;
     const output = compress(input, alphabet);
+
+    // compress.js does not have support for non-http(s) protocols, nor credentials.
+    // previously it would silently strip them, but this block makes it reject instead
+    // additionally, invalid inputs the compressor would otherwise accept (like "http://") are rejected as well
+    const url = new URL(input);
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      throw new Error(`Invalid protocol: ${url.protocol}. Only http and https are supported.`);
+    }
+
+    if (url.username || url.password) {
+      throw new Error(`Credentials in URL are not supported`);
+    }
+
     let inputNormalized = input;
     const inputLower = input.toLowerCase();
     if (inputLower.startsWith("https://")) {
