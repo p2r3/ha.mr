@@ -5,7 +5,7 @@ import {
   outputAlphabetEmoji
 } from "./alphabets.js";
 
-let generateQR, qrMode, qrCorrection;
+let qrGenerate, qrMode, qrCorrection;
 
 let domain = window.location.hostname;
 if (domain !== "ha.mr" && domain !== "www.ha.mr") {
@@ -100,10 +100,10 @@ function updateOutput() {
     outputLinkElement.href = `http://${domain}#${output}`;
     outputLinkElement.style.color = "";
     if (settings.qr) {
-      // lazyload the qr generator to avoid loading it on a redirect
-      if (!generateQR) {
+      // Lazyload the qr generator to avoid loading it on a redirect
+      if (!qrGenerate) {
         import("./lean-qr/lean-qr.js").then((module) => {
-          generateQR = module.generate;
+          qrGenerate = module.generate;
           qrMode = module.mode;
           qrCorrection = module.correction;
           updateOutput();
@@ -119,28 +119,27 @@ function updateOutput() {
       const qrCodeDomain = domain.toUpperCase();
       const qrCodeLink = `HTTP://${qrCodeDomain}/${compress(input, outputAlphabetQR)}`;
 
-      const errorCorrection =
-        correctionLevels[qrCodeCorrectionLevelElement.value];
+      const errorCorrection = correctionLevels[qrCodeCorrectionLevelElement.value];
 
-      const qr = generateQR(
+      const qr = qrGenerate(
         qrMode.alphaNumeric(qrCodeLink),
         {
           minVersion: 1,
           maxVersion: 40,
           minCorrectionLevel: errorCorrection,
-          // lean-qr will choose the highest ecc that will fit in the smallest version, between minCorrectionLevel and maxCorrectionLevel
+          // Lean-qr will choose the highest ECC that will fit in the smallest version, between minCorrectionLevel and maxCorrectionLevel
           maxCorrectionLevel: qrCorrection.H,
         });
 
       qr.toCanvas(qrCodeImage,
         {
-          on: [0x00, 0x00, 0x00, 0xFF], // black
+          on:  [0x00, 0x00, 0x00, 0xFF], // black
           off: [0xFF, 0xFF, 0xFF, 0xFF], // white
           pad: 4,
         }
       );
-      // set image width to qr version size + 4px per side padding, scale by 8
-      // otherwise the output will be at 1px scale and impossible to see.
+      // Set image width to qr version size + 4px per side padding, scale by 8
+      // Otherwise the output will be at 1px scale and impossible to see.
       qrCodeImage.style.width = `${(qr.size + 8) * 8}px`;
       qrCodeImage.style.height = `${(qr.size + 8) * 8}px`;
       qrCodeImage.title = qrCodeLink;
