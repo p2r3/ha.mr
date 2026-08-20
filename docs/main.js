@@ -35,12 +35,12 @@ for (const setting in settingsElements) {
   });
 }
 
-function countSymbols(string, alphabet) {
+function countSymbols (string, alphabet) {
   let count = 0;
   while (string) {
     const symbol = alphabet.find(c => string.endsWith(c));
     string = string.slice(0, symbol ? -symbol.length : -1);
-    count++;
+    count ++;
   }
   return count;
 }
@@ -58,7 +58,7 @@ qrCodeCorrectionLevelElement.addEventListener("input", () => {
   updateOutput();
 });
 
-function updateOutput() {
+function updateOutput () {
   const input = inputLinkElement.value.trim();
   try {
     const alphabet = settings.emoji ? outputAlphabetEmoji : outputAlphabetASCII;
@@ -168,7 +168,7 @@ const redirectContainerElement = document.querySelector("#redirect-container");
 const redirectLinkElement = document.querySelector("#redirect-link");
 const loaderElement = document.querySelector("#loader");
 
-function handleRedirectPrompt(target) {
+function handleRedirectPrompt (target) {
   loaderElement.style.display = "none";
   redirectContainerElement.style.display = "flex";
   redirectLinkElement.textContent = target;
