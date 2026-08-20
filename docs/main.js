@@ -54,7 +54,7 @@ const qrCodeImage = document.querySelector("#qrcode");
 const qrCodeCorrectionLevelContainer = document.querySelector("#qr-correct-level-container");
 const qrCodeCorrectionLevelElement = document.querySelector("#qr-correct-level");
 
-qrCodeCorrectionLevelElement.addEventListener("change", () => {
+qrCodeCorrectionLevelElement.addEventListener("input", () => {
   updateOutput();
 });
 
