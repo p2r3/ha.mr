@@ -1,4 +1,7 @@
-const CACHE = "ha.mr-v1";
+import { decompress } from "./compress.js";
+import { outputAlphabetQR } from "./alphabets.js";
+
+const CACHE = "ha.mr-v2";
 const APP = [
   "/404.html",
   "/main.js",
@@ -28,11 +31,25 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(
-      caches.match("/404.html").then(response => response || fetch(request))
-    );
+    event.respondWith(handleNavigation(request, url));
     return;
   }
 
   event.respondWith(caches.match(request).then(response => response || fetch(request)));
 });
+
+async function handleNavigation (request, url) {
+  try {
+    const payload = decodeURIComponent(url.pathname.slice(1));
+    if (payload) {
+      const target = new URL(decompress(payload, outputAlphabetQR));
+      if (target.protocol === "http:" || target.protocol === "https:") {
+        return Response.redirect(target.href);
+      }
+    }
+  } catch (error) {
+    console.warn("Could not decode path URL.", error);
+  }
+
+  return await caches.match("/404.html") || fetch(request);
+}
