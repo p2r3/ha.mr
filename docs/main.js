@@ -5,6 +5,12 @@ import {
   outputAlphabetEmoji
 } from "./alphabets.js";
 
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/service-worker.js").catch((error) => {
+    console.warn("Service worker registration failed.", error);
+  });
+}
+
 let qrGenerate, qrMode, qrCorrection;
 
 let domain = window.location.hostname;
