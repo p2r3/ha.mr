@@ -117,6 +117,16 @@ function updateOutput () {
     outputLinkElement.textContent = `http://${domain}#${output}`;
     outputLinkElement.href = `http://${domain}#${output}`;
     outputLinkElement.style.color = "";
+
+    const linkToMe = url.host === domain && url.pathname === "/" && url.hash === "" && url.search === "";
+    if (linkToMe) {
+      outputRatioElement.textContent = `That's me!`;
+      outputRatioElement.style.color = "rgb(15, 190, 15)";
+      outputLinkElement.textContent = `http://${domain}`;
+      outputLinkElement.href = `http://${domain}`;
+      outputLinkElement.style.color = "";
+    }
+
     if (settings.qr) {
       // Lazyload the qr generator to avoid loading it on a redirect
       if (!qrGenerate) {
@@ -135,7 +145,10 @@ function updateOutput () {
       qrCodeCorrectionLevelContainer.style.display = "inline";
 
       const qrCodeDomain = domain.toUpperCase();
-      const qrCodeLink = `HTTP://${qrCodeDomain}/${compress(input, outputAlphabetQR)}`;
+      let qrCodeLink = `HTTP://${qrCodeDomain}/${compress(input, outputAlphabetQR)}`;
+      if (linkToMe) {
+        qrCodeLink = `HTTP://${qrCodeDomain}`;
+      }
 
       const errorCorrection = correctionLevels[qrCodeCorrectionLevelElement.value];
 
