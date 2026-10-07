@@ -18,12 +18,14 @@ if (webPort && webPort !== "80" && webPort !== "443") {
 
 var settings = {
   emoji: false,
-  qr: false
+  qr: false,
+  https: true
 };
 
 const settingsElements = {
   emoji: "#settings-emoji",
-  qr: "#settings-qr"
+  qr: "#settings-qr",
+  https: "#settings-https"
 };
 
 for (const setting in settingsElements) {
@@ -114,8 +116,12 @@ function updateOutput () {
       outputRatioElement.textContent = "Output is the same length as the input";
       outputRatioElement.style.color = "gray";
     }
-    outputLinkElement.textContent = `http://${domain}#${output}`;
-    outputLinkElement.href = `http://${domain}#${output}`;
+    // issue #26 - the output link/QR was always built as "http://...", even when
+    // the person generating it wants "https://".
+    const outputScheme = settings.https ? "https" : "http";
+    const fullOutputLink = `${outputScheme}://${domain}#${output}`;
+    outputLinkElement.textContent = fullOutputLink;
+    outputLinkElement.href = fullOutputLink;
     outputLinkElement.style.color = "";
 
     const linkToMe = url.host === domain && url.pathname === "/" && url.hash === "" && url.search === "";
@@ -123,7 +129,7 @@ function updateOutput () {
       outputRatioElement.textContent = `That's me!`;
       outputRatioElement.style.color = "rgb(15, 190, 15)";
       outputLinkElement.textContent = `http://${domain}`;
-      outputLinkElement.href = `http://${domain}`;
+      outputLinkElement.href = `${outputScheme}://${domain}`;
       outputLinkElement.style.color = "";
     }
 
@@ -145,9 +151,10 @@ function updateOutput () {
       qrCodeCorrectionLevelContainer.style.display = "inline";
 
       const qrCodeDomain = domain.toUpperCase();
-      let qrCodeLink = `HTTP://${qrCodeDomain}/${compress(input, outputAlphabetQR)}`;
+      const qrCodeScheme = settings.https ? "HTTPS" : "HTTP";
+      let qrCodeLink = `${qrCodeScheme}://${qrCodeDomain}/${compress(input, outputAlphabetQR)}`;
       if (linkToMe) {
-        qrCodeLink = `HTTP://${qrCodeDomain}`;
+        qrCodeLink = `${qrCodeScheme}://${qrCodeDomain}`;
       }
 
       const errorCorrection = correctionLevels[qrCodeCorrectionLevelElement.value];
