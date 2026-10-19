@@ -21,3 +21,6 @@ Compresses links and optimizes QR codes entirely in the browser, without a back-
 - https://www.npmjs.com/package/lean-qr
 - https://github.com/smythp/reddit_links_dataset
 - https://github.com/ada-url/url-dataset
+
+## Goto
+- https://ha.mr
